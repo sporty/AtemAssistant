@@ -1,6 +1,9 @@
-
+/.idea
 .env
+
 token.pickle
 google.json
 
-/.idea
+atem_assistant.ini
+local/*
+
