@@ -92,6 +92,22 @@ def add_to_playlist(youtube, playlist_id, video):
     return response
 
 
+def set_category(youtube, video, category):
+    logger.debug(video)
+
+    response = youtube.video().set(
+        part="snippet",
+        body=dict(
+            snippet=dict(
+                playlistId=playlist_id,
+                resourceId=video,
+            ),
+        )
+    ).execute()
+
+    return response
+
+
 def insert_broadcast(
         youtube, broadcast_title, description, start_time, privacy_status
 ):

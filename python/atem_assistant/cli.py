@@ -13,6 +13,9 @@ import sys
 
 import pytz
 
+from atem_assistant.atem import (
+    set_stream_key,
+)
 from atem_assistant.google import (
     auth,
     upload_thumbnail,
@@ -59,7 +62,7 @@ def _f(content):
 
     now = datetime.datetime.now(jst)
     delta = datetime.timedelta(minutes=10)
-    create_datetime = now + delta
+    create_datetime = now + delta  # １０分後を指定する
 
     keywords = {
         "iso": create_datetime.isoformat(),  # '2022-05-30T00:00:00.000Z'
@@ -136,6 +139,12 @@ def main():
         default=config["YouTube"].get("thumbnail", this_dir("../../images/thumbnail.png")))
 
     parser.add_argument(
+        "--ip-address",
+        dest="ip_address",
+        help="IP address of ATEM Mini.",
+        default=config["ATEM"].get("ip-address"))
+
+    parser.add_argument(
         u"-D", u"--debug",
         dest=u"debug",
         action=u"store_true", default=False,
@@ -171,7 +180,7 @@ def main():
     logger.info("stream: {0}".format(stream_name))
 
     # Upload ATEM setting
-    pass
+    set_stream_key(args.ip_address, stream_name)
 
     return 0
 
