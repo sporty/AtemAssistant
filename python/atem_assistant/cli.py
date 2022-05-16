@@ -94,7 +94,7 @@ def main():
         u"--google",
         dest=u"client_secret",
         help=u"Google client secret json file.",
-        default=config["YouTube"].get("google", this_dir("../../google.json")))
+        default=config["YouTube"].get("google", "./google.json"))
 
     parser.add_argument(
         "--broadcast-title",
@@ -136,7 +136,7 @@ def main():
         "--thumbnail",
         dest="thumbnail",
         help="Thumbnail image filename.",
-        default=config["YouTube"].get("thumbnail", this_dir("../../images/thumbnail.png")))
+        default=config["YouTube"].get("thumbnail", "./images/thumbnail.png"))
 
     parser.add_argument(
         "--ip-address",
