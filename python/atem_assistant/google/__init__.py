@@ -8,6 +8,7 @@ import os.path
 import pickle
 
 from google.auth.transport.requests import Request
+from google.auth.exceptions import RefreshError
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
@@ -16,6 +17,15 @@ API_VERSION = "v3"
 SCOPES = ["https://www.googleapis.com/auth/youtube"]
 
 logger = logging.getLogger("atem_assistant.google")
+
+
+def _run_install_app_flow(client_secret):
+    u"""ブラウザで認証"""
+
+    _flow = InstalledAppFlow.from_client_secrets_file(client_secret, SCOPES)
+    creds = _flow.run_local_server(port=0)
+
+    return creds
 
 
 def auth(client_secret, token_file="token.pickle"):
@@ -28,11 +38,19 @@ def auth(client_secret, token_file="token.pickle"):
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            # アクセストークンが期限切れなので、リフレッシュトークンを使って再取得
+            try:
+                creds.refresh(Request())
+            except RefreshError as m:
+                # 通常ここでは例外は発生しにくいが、
+                # テスト中プロジェクトの場合はリフレッシュトークンの期限が７日に設定されている
+
+                if m.args[1]["error_description"] != u"Token has been expired or revoked.":
+                    raise
+
+                creds = _run_install_app_flow(client_secret)
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                client_secret, SCOPES)
-            creds = flow.run_local_server(port=0)
+            creds = _run_install_app_flow(client_secret)
 
         # Save the credentials for the next run
         with open(token_file, 'wb') as token:
