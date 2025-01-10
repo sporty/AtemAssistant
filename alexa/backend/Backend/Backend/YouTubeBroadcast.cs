@@ -19,7 +19,7 @@ public class YouTubeStream
 
         var service = new YouTubeService(new BaseClientService.Initializer
         {
-            HttpClientInitializer = this.Credential
+            HttpClientInitializer = this.Credential,
         });
         var listRequest = service.Playlists.List(part: "id,snippet,status");
 
@@ -58,7 +58,7 @@ public class YouTubeStream
                 Status = new LiveBroadcastStatus()
                 {
                     PrivacyStatus = privacyStatus,
-                    SelfDeclaredMadeForKids = false
+                    SelfDeclaredMadeForKids = false,
                 },
                 ContentDetails = new LiveBroadcastContentDetails()
                 {
@@ -101,16 +101,15 @@ public class YouTubeStream
             {
                 Snippet = new LiveStreamSnippet()
                 {
-                    Title = streamTitle
+                    Title = streamTitle,
                 },
                 Cdn = new CdnSettings()
                 {
                     IngestionType = "rtmp",
                     Resolution = "1080p",
                     FrameRate = "60fps",
-                }
-            }
-        ).ExecuteAsync();
+                },
+            }).ExecuteAsync();
 
         return response;
     }
@@ -129,8 +128,7 @@ public class YouTubeStream
             var response = service.Thumbnails.Set(
                 videoId: broadcast.Id,
                 stream: stream,
-                contentType: "application/octet-stream"
-            );
+                contentType: "application/octet-stream");
             return response;
         }
     }
