@@ -92,12 +92,12 @@ namespace LiveStreamAssistance
                 HttpClientInitializer = cred
             });
 
-            var youTubeStream = new YouTubeStream()
+            var youTubeStream = new YouTubeBroadcast()
             {
                 Credential = cred,
             };
 
-            var liveStream = await youTubeStream.CreateStream(
+            var liveStream = await youTubeStream.Create(
                 "New Broadcast",
                 "This is New Broadcast",
                 DateTime.Now,

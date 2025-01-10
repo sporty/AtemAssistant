@@ -5,7 +5,7 @@ using Google.Apis.YouTube.v3.Data;
 
 namespace LiveStreamAssistance;
 
-public class YouTubeStream
+public class YouTubeBroadcast
 {
     public GoogleCredential Credential { get; set; }
 
@@ -133,7 +133,7 @@ public class YouTubeStream
         }
     }
 
-    public async Task<LiveStream> CreateStream(
+    public async Task<LiveStream> Create(
         string broadcastTitle, string description, DateTime startTime, string privacyStatus,
         string streamTitle,
         string thumbnail,

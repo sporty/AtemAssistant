@@ -1,31 +1,9 @@
-﻿/*
-Copyright 2020 Google Inc
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-using Google.Apis.Auth.AspNetCore3;
+﻿using Google.Apis.Auth.AspNetCore3;
 using Google.Apis.Auth.OAuth2;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System;
 using Google.Apis.Util.Store;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace LiveStreamAssistance
 {
@@ -101,35 +79,14 @@ namespace LiveStreamAssistance
                         },
                         OnTokenValidated = context =>
                         {
-                            // List<AuthenticationToken> tokens = context.Properties.GetTokens().ToList();
-                            // Console.WriteLine($"Refresh Token: {context.ProtocolMessage.RefreshToken}");
-
                             var refreshToken = context.TokenEndpointResponse.RefreshToken;
                             Console.WriteLine($"Refresh Token (TokenEndpointResponse): {refreshToken}");
 
-                            //var token = context.SecurityToken.RawData;
                             fileDataStore.StoreAsync("GoogleToken", refreshToken);
 
                             return Task.CompletedTask;
                         },
                     };
-
-                    /*
-                    // リダイレクトURLを明示的に指定
-                    options.Events = new OpenIdConnectEvents
-                    {
-                        OnRedirectToIdentityProvider = context =>
-                        {
-                            Console.WriteLine($"Redirect URI: {context.ProtocolMessage.RedirectUri}");
-
-                            //context.ProtocolMessage.RedirectUri = "https://takahashi-tribe.ngrok.dev/signin-oidc";
-                            // 必要なパラメータのみ設定
-                            //context.ProtocolMessage.Scope = "openid email profile";
-                            //context.ProtocolMessage.ResponseType = "code";
-                            return Task.CompletedTask;
-                        }
-                    };
-                     */
                 });
         }
 
@@ -142,20 +99,6 @@ namespace LiveStreamAssistance
             app.UseDeveloperExceptionPage();
 
             app.UseHttpsRedirection();
-
-            // ミドルウェアを追加
-            /*
-            app.Use(async (context, next) =>
-            {
-                Console.WriteLine($"Request Host: {context.Request.Host}");
-                if (context.Request.Host.Host == "localhost")
-                {
-                    context.Request.Host = new HostString("takahashi-tribe.ngrok.dev");
-                }
-
-                await next();
-            });
-             */
 
             app.UseRouting();
 
@@ -177,7 +120,6 @@ namespace LiveStreamAssistance
                 Console.WriteLine("MapControllers");
                 endpoints.MapControllers();
             });
-            // app.MapControllers(); // コントローラへのルーティングを設定
 
             app.UseEndpoints(endpoints =>
             {

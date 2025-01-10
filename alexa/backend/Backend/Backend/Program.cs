@@ -66,12 +66,12 @@ namespace LiveStreamAssistance
                         var credential = await GetGoogleCredential();
                         Console.WriteLine($"Google Credential: {credential}");
 
-                        var youTubeStream = new YouTubeStream()
+                        var youTube = new YouTubeBroadcast()
                         {
                             Credential = credential,
                         };
 
-                        var liveStream = await youTubeStream.CreateStream(
+                        var liveStream = await youTube.Create(
                             FormatWithStartTime(opt.BroadcastTitle),
                             FormatWithStartTime(opt.BroadcastDescription),
                             DateTime.Parse(FormatWithStartTime(opt.StartTime)),

@@ -29,7 +29,7 @@ public class CreateBroadcastController : ControllerBase
 
             // ストリームIDを取得
             process.WaitForExit();
-            string streamId = process.StandardOutput.ReadToEnd().Trim();
+            var streamId = process.StandardOutput.ReadToEnd().Trim();
 
             if (string.IsNullOrEmpty(streamId))
             {
