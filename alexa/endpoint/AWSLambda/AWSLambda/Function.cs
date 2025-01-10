@@ -51,8 +51,6 @@ public class Function
 
             // レスポンスの内容を取得
             string responseBody = await response.Content.ReadAsStringAsync();
-
-            // 成功した場合のログ
             context.Logger.LogLine($"Response: {responseBody}");
 
             context.Logger.LogLine("writeAtemMini ====================================");
@@ -78,8 +76,7 @@ public class Function
         catch (Exception ex)
         {
             // エラーが発生した場合のログ
-            // context.Logger.LogLine($"Error: {ex.Message}");
-            // throw;
+            context.Logger.LogLine($"Error: {ex.Message}");
             return ResponseBuilder.Tell("エラーが発生したため処理を中断します");
         }
 
