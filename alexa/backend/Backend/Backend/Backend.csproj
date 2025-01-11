@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+      <UserSecretsId>6016fa03-b43b-4cb5-a0f5-72278705a73d</UserSecretsId>
+  </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Alexa.NET" Version="1.22.0" />
+        <PackageReference Include="CommandLineParser" Version="2.9.1" />
+        <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
+        <PackageReference Include="Google.Apis.Auth.AspNetCore3" Version="1.68.0" />
+        <PackageReference Include="Google.Apis.Calendar.v3" Version="1.68.0.3592" />
+        <PackageReference Include="Google.Apis.Core" Version="1.68.0" />
+        <PackageReference Include="Google.Apis.Drive.v3" Version="1.68.0.3627" />
+        <PackageReference Include="Google.Apis.YouTube.v3" Version="1.68.0.3624" />
+        <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    </ItemGroup>
+
+</Project>
