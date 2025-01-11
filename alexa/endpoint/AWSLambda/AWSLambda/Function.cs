@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 // シリアライズの自動化の設定
@@ -17,6 +19,19 @@ using System.Threading.Tasks;
 
 namespace AWSLambda;
 
+public class CreateBroadcastResponse
+{
+    [JsonPropertyName("stream_id")]
+    public string StreamId { get; set; }
+}
+
+public class WriteAtemMiniRequest
+{
+    public string StreamId { get; set; }
+}
+
+
+
 public class Function
 {
     private static readonly HttpClient HttpClient = new HttpClient();
@@ -26,7 +41,7 @@ public class Function
     /// </summary>
     /// <param name="input">The event for the Lambda function handler to process.</param>
     /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
-    /// <returns></returns>
+    /// <returns>SkillResponse</returns>
     public async Task<SkillResponse> FunctionHandler(SkillRequest input, ILambdaContext context)
     {
         string baseUrl = "https://takahashi-tribe.ngrok.dev";
@@ -36,42 +51,56 @@ public class Function
 
         try
         {
-            context.Logger.LogLine("createBroadcast ====================================");
+            context.Logger.LogLine("CreateBroadcast ====================================");
             await progressiveResponse.SendSpeech("YouTube番組を作成しています");
-            //await Task.Delay(5000); // 模擬処理
 
             // POSTリクエストの送信
-            HttpResponseMessage response = await HttpClient.PostAsync($"{baseUrl}/api/createBroadcast", null);
+            HttpResponseMessage response = await HttpClient.PostAsync($"{baseUrl}/api/CreateBroadcast", null);
 
-            if (response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
             {
                 context.Logger.LogLine($"{(int)response.StatusCode}");
-                return ResponseBuilder.Tell("エラーが発生しました。中断します。");
+                return ResponseBuilder.Tell(
+                    $"エラーが発生しました。ステータスコード{(int)response.StatusCode}。 中断します。");
+            }
+
+            var prefecturesJsonString = await response.Content.ReadAsStringAsync();
+
+            // JSON文字列をデシリアライズしてList<Prefecture>型のデータに変換
+            CreateBroadcastResponse responseJson = JsonSerializer.Deserialize<CreateBroadcastResponse>(prefecturesJsonString);
+
+            if (responseJson is null)
+            {
+                return ResponseBuilder.Tell("レスポンスのデシリアライズに失敗しました。中断します。");
             }
 
             // レスポンスの内容を取得
-            string responseBody = await response.Content.ReadAsStringAsync();
-            context.Logger.LogLine($"Response: {responseBody}");
+            context.Logger.LogLine($"Response: {responseJson}");
 
-            context.Logger.LogLine("writeAtemMini ====================================");
+            context.Logger.LogLine("WriteAtemMini ====================================");
             await progressiveResponse.SendSpeech("エイテムミニに書き込みをしています");
-            // await Task.Delay(5000); // 模擬処理
 
             // 家庭内サーバーに送るデータのシリアライズ
-            var payload = new
+            var payload = new WriteAtemMiniRequest()
             {
-                liveStreamId = "",
+                StreamId = responseJson.StreamId,
             };
-            string jsonPayload = System.Text.Json.JsonSerializer.Serialize(payload);
+            string jsonPayload = JsonSerializer.Serialize(payload);
 
             // HTTPリクエストの準備
             var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
             // POSTリクエストの送信
-            HttpResponseMessage response_2 = await HttpClient.PostAsync($"{baseUrl}/api/writeAtemMini", content);
+            HttpResponseMessage response_2 = await HttpClient.PostAsync($"{baseUrl}/api/WriteAtemMini", content);
+            if (!response_2.IsSuccessStatusCode)
+            {
+                context.Logger.LogLine($"{(int)response_2.StatusCode}");
+                return ResponseBuilder.Tell(
+                    $"エラーが発生しました。ステータスコード{(int)response_2.StatusCode}。 中断します。");
+            }
 
             // レスポンスの内容を取得
-            string responseBody_2 = await response.Content.ReadAsStringAsync();
+            string responseBody_2 = await response_2.Content.ReadAsStringAsync();
         }
         catch (Exception ex)
         {
@@ -82,4 +111,6 @@ public class Function
 
         return ResponseBuilder.Tell("準備完了しました。頑張ってください");
     }
+
+
 }

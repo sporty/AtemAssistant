@@ -26,13 +26,24 @@ public class CreateBroadcastController : ControllerBase
             };
 
             process.Start();
+            process.WaitForExit();
+
+            var output = process.StandardOutput.ReadToEnd();
+            Console.WriteLine(output);
+
+            if (process.ExitCode != 0)
+            {
+                // 失敗
+                return this.StatusCode(500, process.StandardOutput.ReadToEnd());
+            }
 
             // ストリームIDを取得
-            process.WaitForExit();
-            var streamId = process.StandardOutput.ReadToEnd().Trim();
+            var lines = output.Replace("\r\n", "\n").Split(new[] { '\n', '\r' });
+            var streamId = lines.LastOrDefault(x => !string.IsNullOrEmpty(x));
 
             if (string.IsNullOrEmpty(streamId))
             {
+                // 失敗
                 return this.StatusCode(500, "Failed to create broadcast. No stream ID returned.");
             }
 
