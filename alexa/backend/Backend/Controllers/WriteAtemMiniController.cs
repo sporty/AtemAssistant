@@ -33,6 +33,14 @@ public class WriteAtemMiniController : ControllerBase
             process.Start();
             process.WaitForExit();
 
+            var output = process.StandardOutput.ReadToEnd();
+            Console.WriteLine(output);
+            if (process.ExitCode != 0)
+            {
+                // 失敗
+                return this.StatusCode(500, output);
+            }
+
             // 成功レスポンス
             return this.Ok("Stream ID written to ATEM Mini successfully.");
         }

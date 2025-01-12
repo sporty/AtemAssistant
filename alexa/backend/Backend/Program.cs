@@ -48,7 +48,7 @@ namespace LiveStreamAssistance
     [Verb("writeAtemMini")]
     class WriteAtemMiniSubCommand
     {
-        [Option('i', "streamId", Required = true, HelpText = "Stream ID")]
+        [Option('i', "stream-id", Required = true, HelpText = "Stream ID")]
         public string StreamId { get; set; }
     }
 
@@ -56,7 +56,6 @@ namespace LiveStreamAssistance
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine(args);
             Parser.Default.ParseArguments<CreateBroadcastSubCommand, WriteAtemMiniSubCommand>(args)
                 .WithParsed<CreateBroadcastSubCommand>(opt =>
                 {
@@ -83,13 +82,16 @@ namespace LiveStreamAssistance
                         Console.WriteLine(liveStream.Id);
                     }).GetAwaiter().GetResult();
                 })
-                .WithParsed<WriteAtemMiniSubCommand>(async opt2 =>
+                .WithParsed<WriteAtemMiniSubCommand>(opt2 =>
                 {
-                    //args[2]
-                    /*
-                    var atemMini = new AtemMini();
-                    await atemMini.Write(args[2]);
-                     */
+                    Task.Run(async () =>
+                    {
+                        var atemMini = new AtemMini()
+                        {
+                            IpAddress = "10.0.0.3",
+                        };
+                        await atemMini.WriteStreamId(opt2.StreamId);
+                    }).GetAwaiter().GetResult();
                 })
                 .WithNotParsed(er =>
                 {
