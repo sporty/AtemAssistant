@@ -67,7 +67,7 @@ namespace LiveStreamAssistance
                     options.Scope.Add("https://www.googleapis.com/auth/youtube");
 
                     // トークンをファイルに保存
-                    var fileDataStore = new FileDataStore(@"C:\work\AtemAssistant\alexa\backend\Backend\Backend", true);
+                    var fileDataStore = new FileDataStore(Environment.CurrentDirectory, true);
                     options.SaveTokens = true;
                     options.Events = new OpenIdConnectEvents
                     {

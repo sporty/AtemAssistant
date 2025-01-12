@@ -169,7 +169,7 @@ namespace LiveStreamAssistance
             var clientSecrets = GoogleClientSecrets.FromFile(envValue).Secrets;
 
             // 保存されているリフレッシュトークンを読み込み
-            var fileDataStore = new FileDataStore(@"C:\work\AtemAssistant\alexa\backend\Backend\Backend", true);
+            var fileDataStore = new FileDataStore(Environment.CurrentDirectory, true);
             var token = await fileDataStore.GetAsync<string>("GoogleToken");
 
             // リフレッシュトークンがない場合は終了
