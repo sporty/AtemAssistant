@@ -82,14 +82,16 @@ namespace LiveStreamAssistance
                         Console.WriteLine(liveStream.Id);
                     }).GetAwaiter().GetResult();
                 })
-                .WithParsed<WriteAtemMiniSubCommand>(async opt2 =>
+                .WithParsed<WriteAtemMiniSubCommand>(opt2 =>
                 {
-                    Console.WriteLine(opt2.StreamId);
-                    //args[2]
-                    /*
-                    var atemMini = new AtemMini();
-                    await atemMini.Write(args[2]);
-                     */
+                    Task.Run(async () =>
+                    {
+                        var atemMini = new AtemMini()
+                        {
+                            IpAddress = "10.0.0.3",
+                        };
+                        await atemMini.WriteStreamId(opt2.StreamId);
+                    }).GetAwaiter().GetResult();
                 })
                 .WithNotParsed(er =>
                 {

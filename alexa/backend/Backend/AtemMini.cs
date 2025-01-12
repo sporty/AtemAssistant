@@ -1,239 +1,121 @@
-﻿namespace LiveStreamAssistance;
+﻿using System;
+using System.Threading.Tasks;
+using LibAtem.Net;
+using LibAtem.Commands.Streaming;
+
+namespace LiveStreamAssistance;
 
 public class AtemMini
 {
-    public async Task<string> Write(string streamId)
+    public string IpAddress = "10.0.0.9";
+    public TimeSpan timeOut = TimeSpan.FromSeconds(5);
+
+    public async Task<string> WriteStreamId(string streamId)
     {
+        // ATEM 接続インスタンス
+        var atem = new AtemClient(this.IpAddress);
+
+        // 状態更新完了用のタスク完了ソース
+        var tcs = new TaskCompletionSource<bool>();
+
+        atem.OnReceive += (sender, commands) =>
+        {
+            var getCommand = commands.FirstOrDefault(x => x is StreamingServiceGetCommand);
+            if (getCommand is StreamingServiceGetCommand getCommandObj)
+            {
+                Console.WriteLine($"Current Setting: url={getCommandObj.Url}, key={getCommandObj.Key}");
+
+                if (getCommandObj.Key == streamId)
+                {
+                    // 状態更新完了を通知
+                    Console.WriteLine($"StreamId is matched.");
+                    tcs.SetResult(true);
+                    return;
+                }
+
+                if (sender is AtemClient atemClient)
+                {
+                    var mask = StreamingServiceSetCommand.MaskFlags.Key;
+                    var setCommand = new StreamingServiceSetCommand()
+                    {
+                        Mask = mask,
+                        Key = streamId,
+                    };
+                    Console.WriteLine($"SendCommand key: {streamId}");
+                    atemClient.SendCommand(setCommand);
+                }
+            }
+        };
+
+        atem.OnConnection += (sender) =>
+        {
+            try
+            {
+                // 現在のStreaming.Settings.Keyを表示
+                //Console.WriteLine($"Current Streaming Key: {state.Streaming.Settings.Key}");
+
+                // Streaming.Settings.Keyを変更
+
+                // コマンド送信
+                /*
+                var command = new StreamingServiceSetCommand()
+                {
+                    Key = streamId,
+                };
+                atem.SendCommand(command);
+                 */
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating streaming key: {ex.Message}");
+                tcs.SetException(ex);
+            }
+        };
+
+        // ATEM Miniに接続
+        Console.WriteLine($"Connecting to ATEM Mini at {this.IpAddress} to write stream key {streamId}...");
+        try
+        {
+            atem.Connect();
+
+            // 状態更新が完了するのを待機
+            bool result = await WaitWithTimeout(tcs.Task, this.timeOut);
+            if (!result)
+            {
+                Console.WriteLine("タイムアウトしました。");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to connect to ATEM Mini: {ex.Message}");
+        }
+        finally
+        {
+            // 接続を終了
+            atem.Dispose();
+            Console.WriteLine("Connection closed.");
+        }
 
         return "Finished.";
     }
+
+    static async Task<bool> WaitWithTimeout(Task task, TimeSpan timeout)
+    {
+        // タイムアウトタスクを作成
+        var timeoutTask = Task.Delay(timeout);
+
+        // 完了タスクを待機
+        var completedTask = await Task.WhenAny(task, timeoutTask);
+
+        // 完了タスクが元のタスクかタイムアウトかを判定
+        if (completedTask == task)
+        {
+            await task; // 必要に応じて元のタスクの結果を取得
+            return true; // タスク完了
+        }
+        else
+        {
+            return false; // タイムアウト
+        }
+    }
 }
-
-
-
-
-/*
-
-class StreamRTMPMonitor : public IBMDSwitcherStreamRTMPCallback
-{
-public:
-  StreamRTMPMonitor() : mRefCount(1) { }
-
-protected:
-  virtual ~StreamRTMPMonitor() { }
-
-public:
-  HRESULT QueryInterface(const IID &, void **) {
-    return S_OK;
-  }
-  ULONG AddRef(void) {
-    return InterlockedIncrement(&mRefCount);
-  }
-  ULONG Release(void) {
-    int newCount = InterlockedDecrement(&mRefCount);
-    if (newCount == 0)
-      delete this;
-    return newCount;
-  }
-
-  HRESULT STDMETHODCALLTYPE	Notify(BMDSwitcherStreamRTMPEventType eventType) {
-    std::cout << "Notify ----" << std::endl;
-
-    if (eventType == bmdSwitcherStreamRTMPEventTypeKeyChanged )
-    {
-      std::cout << "Key is Changed!" << std::endl;
-    }
-    else {
-      std::cout << eventType << std::endl;
-    }
-
-    return S_OK;
-  }
-
-  HRESULT STDMETHODCALLTYPE	NotifyStatus(BMDSwitcherStreamRTMPState stateType, BMDSwitcherStreamRTMPError error) {
-    std::cout << "NotifyStatus ----" << std::endl;
-
-    if (stateType == bmdSwitcherStreamRTMPStateIdle) {
-      std::cout << "Switcher is Idle." << std::endl;
-    } else {
-    }
-
-    std::cout << stateType << std::endl;
-    std::cout << error << std::endl;
-
-    return S_OK;
-  }
-
-private:
-  LONG mRefCount;
-};
-
-
-
-class AtemControl {
-public:
-  AtemControl() : switcherDiscovery(NULL), switcher(NULL) {
-    HRESULT hr;
-
-    // Initialize COM and Switcher related members
-    if (FAILED(CoInitialize(NULL))) {
-      std::cout << "CoInitialize failed." << std::endl;
-      return;
-    }
-
-    // COM作成
-    hr = CoCreateInstance(CLSID_CBMDSwitcherDiscovery, NULL, CLSCTX_ALL, IID_IBMDSwitcherDiscovery, (void**)&(this->switcherDiscovery));
-    if (FAILED(hr))
-    {
-      std::cout << "Could not create Switcher Discovery Instance.\nATEM Switcher Software may not be installed." << std::endl;
-      return;
-    }
-  }
-
-  virtual ~AtemControl() {}
-
-  HRESULT connect(BSTR address) {
-    HRESULT hr;
-
-    BMDSwitcherConnectToFailure failReason;
-
-    // 接続
-    hr = switcherDiscovery->ConnectTo(address, &switcher, &failReason);
-
-    if (SUCCEEDED(hr)) {
-      // switcherConnected();
-    } else {
-      switch (failReason)
-      {
-      case bmdSwitcherConnectToFailureNoResponse:
-        std::cout << "No response from Switcher" << std::endl;
-        break;
-      case bmdSwitcherConnectToFailureIncompatibleFirmware:
-        std::cout << "Switcher has incompatible firmware" << std::endl;
-        break;
-      default:
-        std::cout << "Connection failed for unknown reason" << std::endl;
-        break;
-      }
-    }
-
-    return hr;
-  }
-
-  HRESULT getStreamKey() { 
-    HRESULT hr;
-    // get url
-    BSTR url;
-    hr = switcherStreamRTMP->GetUrl(&url);
-    if (FAILED(hr))
-    {
-      std::cout << "Could not get stream url." << std::endl;
-      return;
-    }
-    wprintf_s(url);
-    wprintf_s(_T("\n"));
-    SysFreeString(url);
-
-    // get key
-    BSTR key;
-    hr = switcherStreamRTMP->GetKey(&key);
-    if (FAILED(hr))
-    {
-      std::cout << "Could not get stream key." << std::endl;
-      return;
-    }
-    wprintf_s(key);
-    wprintf_s(_T("\n"));
-    SysFreeString(key);
-
-  }
-
-  bool setStreamKey(BSTR newKey){
-    HRESULT hr;
-
-    IBMDSwitcherStreamRTMP* switcherStreamRTMP = this->getSwitcherStreamRTMP();
-
-    // イベントコールバックの登録
-    StreamRTMPMonitor *streamRTMPMonitor = new StreamRTMPMonitor();
-    switcherStreamRTMP->AddCallback(streamRTMPMonitor);
-
-    if (!this->isStreamIdle(switcherStreamRTMP)) {
-      return false;
-    }
-
-    // set key
-    hr = switcherStreamRTMP->SetKey(newKey);
-    if (FAILED(hr))
-    {
-      std::cout << "Could not set stream key." << std::endl;
-      return false;
-    }
-
-    std::cout << "Success to set stream key." << std::endl;
-    return true;
-  }
-
-private:
-  IBMDSwitcherStreamRTMP* getSwitcherStreamRTMP() {
-    HRESULT hr;
-    // Stream
-
-    IBMDSwitcherStreamRTMP* switcherStreamRTMP = NULL;
-    hr = switcher->QueryInterface(IID_IBMDSwitcherStreamRTMP, (void**)&switcherStreamRTMP);
-    if (FAILED(hr))
-    {
-      std::cout << "Could not create Switcher Stream RTMP Instance." << std::endl;
-      return NULL;
-    }
-
-    return switcherStreamRTMP;
-
-  }
-
-  bool isStreamIdle(IBMDSwitcherStreamRTMP* switcherStreamRTMP) {
-    HRESULT hr;
-
-    BMDSwitcherStreamRTMPState state;
-    BMDSwitcherStreamRTMPError error;
-    hr = switcherStreamRTMP->GetStatus(&state, &error);
-    if (state == bmdSwitcherStreamRTMPStateIdle) {
-      std::cout << "Switcher is Idle." << std::endl;
-      return true;
-    }
-    else {
-      std::cout << "Switcher is not Idle." << std::endl;
-      return false;
-    }
-  }
-
-  IBMDSwitcherDiscovery* switcherDiscovery = NULL;
-  IBMDSwitcher* switcher = NULL;
-
-};
-
-int write(int argc, char* argv[])
-{
-  AtemControl atem;
-
-  std::cout << "Connect to " << argv[1] << std::endl;
-
-  CString address = argv[1];
-  BSTR addressBstr = address.AllocSysString();
-  HRESULT hr = atem.connect(addressBstr);
-  SysFreeString(addressBstr);
-  if (FAILED(hr)) {
-    return 1;
-  }
-
-  std::cout << "Set key to " << argv[2] << std::endl;
-
-  CString key = argv[2];
-  BSTR new_key = SysAllocString(key);
-  atem.setStreamKey(new_key);
-  SysFreeString(new_key);
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-
-  return 0;
-}
- */
