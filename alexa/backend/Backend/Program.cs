@@ -24,7 +24,7 @@ namespace LiveStreamAssistance
         public string StreamId { get; set; }
 
 
-        [Option("ip-address", Required = true, Default = "10.0.0.3", HelpText = "Stream ID")]
+        [Option("ip-address", Required = false, Default = "10.0.0.3", HelpText = "Stream ID")]
         public string IpAddress { get; set; }
     }
 
