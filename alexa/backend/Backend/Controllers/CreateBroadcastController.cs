@@ -8,8 +8,14 @@ namespace Backend.Controllers;
 public class CreateBroadcastController : ControllerBase
 {
     [HttpPost]
-    public IActionResult Post()
+    public IActionResult Post([FromBody] RequestBody request)
     {
+        string template = "piano";
+        if (!string.IsNullOrEmpty(request.Template))
+        {
+            template = request.Template;
+        }
+
         try
         {
             string executeFilePath = Process.GetCurrentProcess().MainModule.FileName;
@@ -21,7 +27,7 @@ public class CreateBroadcastController : ControllerBase
                 StartInfo = new ProcessStartInfo()
                 {
                     FileName = executeFilePath,
-                    Arguments = "createBroadcast",
+                    Arguments = $"createBroadcast --template {template}",
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
@@ -57,5 +63,10 @@ public class CreateBroadcastController : ControllerBase
         {
             return this.StatusCode(500, $"Error: {ex.Message}");
         }
+    }
+
+    public class RequestBody
+    {
+        public string Template { get; set; }
     }
 }
