@@ -17,12 +17,15 @@ public class WriteAtemMiniController : ControllerBase
 
         try
         {
+            string executeFilePath = Process.GetCurrentProcess().MainModule.FileName;
+            Console.WriteLine($"Execute '{executeFilePath}' to write stream ID..");
+
             // Backend.exeコマンドを実行
             var process = new Process()
             {
                 StartInfo = new ProcessStartInfo()
                 {
-                    FileName = "Backend.exe",
+                    FileName = executeFilePath,
                     Arguments = $"writeAtemMini --stream-id {request.StreamId}",
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
