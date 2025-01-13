@@ -13,7 +13,6 @@ namespace LiveStreamAssistance
         // This can be set on appsettings.json or as an environment variable.
         // You can read more about configuring ASP.NET Core applications here:
         // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-3.1
-        private const string ClientSecretFilenameKey = "TEST_WEB_CLIENT_SECRET_FILENAME";
 
         public Startup(IConfiguration configuration)
         {
@@ -42,7 +41,8 @@ namespace LiveStreamAssistance
             // This loads the OAuth 2.0 client ID used by this application from a client ID json file.
             // You can use any mechanism you want to store and retrieve your client ID information, as long
             // as it is secured. If your client ID information is leaked any other app can pose as your own.
-            var clientSecrets = GoogleClientSecrets.FromFile(Configuration[ClientSecretFilenameKey]).Secrets;
+            var clientSecretFilename = Path.Combine(Environment.CurrentDirectory, "client_secret.json");
+            var clientSecrets = GoogleClientSecrets.FromFile(clientSecretFilename).Secrets;
 
             // This configures Google.Apis.Auth.AspNetCore3 for use in this app.
             services

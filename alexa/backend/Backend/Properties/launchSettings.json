@@ -16,8 +16,7 @@
       "launchUrl": "",
       "applicationUrl": "http://localhost:5245",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "TEST_WEB_CLIENT_SECRET_FILENAME": "client_secret.json"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "https": {
@@ -27,8 +26,7 @@
       "launchUrl": "",
       "applicationUrl": "https://localhost:7192;http://localhost:5245",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "TEST_WEB_CLIENT_SECRET_FILENAME": "client_secret.json"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "IIS Express": {

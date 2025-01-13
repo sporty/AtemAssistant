@@ -164,9 +164,8 @@ namespace LiveStreamAssistance
         public static async Task<GoogleCredential> GetGoogleCredential()
         {
             // client_secret.jsonから読み込み
-            const string clientSecretFilenameKey = "TEST_WEB_CLIENT_SECRET_FILENAME";
-            var envValue = Environment.GetEnvironmentVariable(clientSecretFilenameKey);
-            var clientSecrets = GoogleClientSecrets.FromFile(envValue).Secrets;
+            var clientSecretFilename = Path.Combine(Environment.CurrentDirectory, "client_secret.json");
+            var clientSecrets = GoogleClientSecrets.FromFile(clientSecretFilename).Secrets;
 
             // 保存されているリフレッシュトークンを読み込み
             var fileDataStore = new FileDataStore(Environment.CurrentDirectory, true);
