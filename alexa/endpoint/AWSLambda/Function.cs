@@ -19,6 +19,10 @@ using System.Threading.Tasks;
 
 namespace AWSLambda;
 
+public class CreateBroadcastRequest
+{
+    public string Template { get; set; }
+}
 public class CreateBroadcastResponse
 {
     [JsonPropertyName("stream_id")]
@@ -54,8 +58,18 @@ public class Function
             context.Logger.LogLine("CreateBroadcast ====================================");
             await progressiveResponse.SendSpeech("YouTube番組を作成しています");
 
+            // 家庭内サーバーに送るデータのシリアライズ
+            var createBroadcastRequest = new CreateBroadcastRequest()
+            {
+                Template = "piano",
+            };
+            string jsonPayload = JsonSerializer.Serialize(createBroadcastRequest);
+
+            // HTTPリクエストの準備
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
             // POSTリクエストの送信
-            HttpResponseMessage response = await HttpClient.PostAsync($"{baseUrl}/api/CreateBroadcast", null);
+            HttpResponseMessage response = await HttpClient.PostAsync($"{baseUrl}/api/CreateBroadcast", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -81,26 +95,26 @@ public class Function
             await progressiveResponse.SendSpeech("エイテムミニに書き込みをしています");
 
             // 家庭内サーバーに送るデータのシリアライズ
-            var payload = new WriteAtemMiniRequest()
+            var writeAtemMiniRequest = new WriteAtemMiniRequest()
             {
                 StreamId = responseJson.StreamId,
             };
-            string jsonPayload = JsonSerializer.Serialize(payload);
+            string jsonWriteAtemMiniRequest = JsonSerializer.Serialize(writeAtemMiniRequest);
 
             // HTTPリクエストの準備
-            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+            var writeAtemMiniContent = new StringContent(jsonWriteAtemMiniRequest, Encoding.UTF8, "application/json");
 
             // POSTリクエストの送信
-            HttpResponseMessage response_2 = await HttpClient.PostAsync($"{baseUrl}/api/WriteAtemMini", content);
-            if (!response_2.IsSuccessStatusCode)
+            HttpResponseMessage writeAtemMiniResponse = await HttpClient.PostAsync($"{baseUrl}/api/WriteAtemMini", writeAtemMiniContent);
+            if (!writeAtemMiniResponse.IsSuccessStatusCode)
             {
-                context.Logger.LogLine($"{(int)response_2.StatusCode}");
+                context.Logger.LogLine($"{(int)writeAtemMiniResponse.StatusCode}");
                 return ResponseBuilder.Tell(
-                    $"エラーが発生しました。ステータスコード{(int)response_2.StatusCode}。 中断します。");
+                    $"エラーが発生しました。ステータスコード{(int)writeAtemMiniResponse.StatusCode}。 中断します。");
             }
 
             // レスポンスの内容を取得
-            string responseBody_2 = await response_2.Content.ReadAsStringAsync();
+            string responseBody_2 = await writeAtemMiniResponse.Content.ReadAsStringAsync();
         }
         catch (Exception ex)
         {
