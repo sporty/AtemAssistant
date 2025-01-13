@@ -8,7 +8,7 @@ namespace Backend.Controllers;
 public class WriteAtemMiniController : ControllerBase
 {
     [HttpPost]
-    public IActionResult Post([FromBody] StreamIdRequest request)
+    public IActionResult Post([FromBody] RequestBody request)
     {
         if (string.IsNullOrEmpty(request.StreamId))
         {
@@ -53,7 +53,7 @@ public class WriteAtemMiniController : ControllerBase
         }
     }
 
-    public class StreamIdRequest
+    public class RequestBody
     {
         public string StreamId { get; set; }
     }

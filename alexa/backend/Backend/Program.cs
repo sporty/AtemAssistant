@@ -13,43 +13,38 @@ namespace LiveStreamAssistance
     [Verb("createBroadcast")]
     class CreateBroadcastSubCommand
     {
-        [Option('s', "secretFile", Required = false, HelpText = "secret file path")]
-        public string SecretFile { get; set; }
-
-        [Option("broadcast-title", Required = false, Default = "New Broadcast ({date_ja})",
-            HelpText = "Broadcast Title")]
-        public string BroadcastTitle { get; set; }
-
-        [Option("broadcast-description", Required = false, Default = "This is New Broadcast ({datetime})",
-            HelpText = "Broadcaast Description")]
-        public string BroadcastDescription { get; set; }
-
-        [Option("privacy-status", Required = false, Default = "unlisted",
-            HelpText = "Broadcast privacy status (private|public|unlisted)")]
-        public string PrivacyStatus { get; set; }
-
-        [Option("start-time", Required = false, Default = "{iso}", HelpText = "Scheduled start time")]
-        public string StartTime { get; set; }
-
-        [Option("stream-title", Required = false, Default = "New Stream", HelpText = "Stream Title")]
-        public string StreamTitle { get; set; }
-
-        [Option("playlist-id", Required = false, HelpText = "Playlist ID")]
-        public string PlaylistId { get; set; }
-
-        [Option("category-id", Required = false, HelpText = "Category ID")]
-        public string CategoryId { get; set; }
-
-        [Option("thumbnail", Required = false, Default = "./images/thumbnail.png",
-            HelpText = "Thumbnail image filename")]
-        public string Thumbnail { get; set; }
+        [Option("template", Required = false, Default = "piano", HelpText = "Template name")]
+        public string Template { get; set; }
     }
 
     [Verb("writeAtemMini")]
     class WriteAtemMiniSubCommand
     {
-        [Option('i', "stream-id", Required = true, HelpText = "Stream ID")]
+        [Option("stream-id", Required = true, HelpText = "Stream ID")]
         public string StreamId { get; set; }
+
+
+        [Option("ip-address", Required = true, Default = "10.0.0.3", HelpText = "Stream ID")]
+        public string IpAddress { get; set; }
+    }
+
+    class BroadcastTemplate
+    {
+        public string BroadcastTitle { get; set; }
+
+        public string BroadcastDescription { get; set; }
+
+        public string StartTime { get; set; } = "{iso}";
+
+        public string PrivacyStatus { get; set; } = "unlisted";
+
+        public string StreamTitle { get; set; } = "New Stream";
+
+        public string ThumbnailFilename { get; set; }
+
+        public string PlaylistId { get; set; } = String.Empty;
+
+        public string CategoryId { get; set; } = String.Empty;
     }
 
     public class Program
@@ -65,18 +60,46 @@ namespace LiveStreamAssistance
                         var credential = await GetGoogleCredential();
                         Console.WriteLine($"Google Credential: {credential}");
 
-                        var youTube = new YouTubeBroadcast()
+                        var youTube = new YouTubeBroadcast(credential);
+
+                        var templates = new Dictionary<string, BroadcastTemplate>()
                         {
-                            Credential = credential,
+                            {
+                                "piano",
+                                new BroadcastTemplate
+                                {
+                                    BroadcastTitle = "ピアノの練習 ({date_ja})",
+                                    BroadcastDescription = "毎日のピアノの練習風景\n作成:{datetime}",
+                                    ThumbnailFilename = "images/piano_thumbnail.png",
+                                    PlaylistId = "PLyhlpUpA8tqyvSstYYdNQImXrVC98YnCH",
+                                }
+                            },
+                            {
+                                "guitar",
+                                new BroadcastTemplate
+                                {
+                                    BroadcastTitle = "ギターの練習 ({date_ja})",
+                                    BroadcastDescription = "毎日のギターの練習風景\n作成:{datetime}",
+                                    ThumbnailFilename = "images/guitar_thumbnail.png",
+                                    PlaylistId = "PLyhlpUpA8tqxyv0eZ6yT7g6L8Tq3Yu4fs",
+                                }
+                            },
                         };
 
+                        var tmp = templates[opt.Template];
+
                         var liveStream = await youTube.Create(
-                            FormatWithStartTime(opt.BroadcastTitle),
-                            FormatWithStartTime(opt.BroadcastDescription),
-                            DateTime.Parse(FormatWithStartTime(opt.StartTime)),
-                            opt.PrivacyStatus,
-                            opt.StreamTitle, opt.Thumbnail,
-                            opt.PlaylistId, opt.CategoryId);
+                            FormatWithStartTime(tmp.BroadcastTitle),
+                            FormatWithStartTime(tmp.BroadcastDescription),
+                            DateTime.Parse(FormatWithStartTime(tmp.StartTime)),
+                            tmp.PrivacyStatus,
+                            tmp.StreamTitle, tmp.ThumbnailFilename,
+                            tmp.PlaylistId, tmp.CategoryId);
+
+                        if (liveStream is null)
+                        {
+                            throw new InvalidOperationException("Can't create broadcast");
+                        }
 
                         Console.WriteLine("Live Broadcastとストリーム作成に成功しました");
                         Console.WriteLine(liveStream.Id);
@@ -88,7 +111,7 @@ namespace LiveStreamAssistance
                     {
                         var atemMini = new AtemMini()
                         {
-                            IpAddress = "10.0.0.3",
+                            IpAddress = opt2.IpAddress,
                         };
                         await atemMini.WriteStreamId(opt2.StreamId);
                     }).GetAwaiter().GetResult();
@@ -113,7 +136,6 @@ namespace LiveStreamAssistance
             // 日本標準時 (JST) を取得
             TimeZoneInfo jstZone = TimeZoneInfo.FindSystemTimeZoneById("Tokyo Standard Time");
             DateTime jstNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, jstZone);
-            Console.WriteLine($"現在の日本時間: {jstNow}");
 
             // １０分後を指定する
             var createDateTime = jstNow.AddMinutes(10);
@@ -149,7 +171,8 @@ namespace LiveStreamAssistance
 
                 Console.WriteLine("Getting access token...");
                 // リフレッシュトークンを使って新しいアクセストークンを取得
-                var tokenResponse = await flow.RefreshTokenAsync("rt.sporty@gmail.com", refreshToken, default).ConfigureAwait(false);
+                var tokenResponse = await flow.RefreshTokenAsync("rt.sporty@gmail.com", refreshToken, default)
+                    .ConfigureAwait(false);
                 Console.WriteLine($"TokenResponse is {tokenResponse}");
 
                 return tokenResponse;

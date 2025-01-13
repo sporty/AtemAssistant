@@ -1,5 +1,7 @@
-﻿using Google.Apis.Auth.OAuth2;
+﻿using System.Runtime.CompilerServices;
+using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
+using Google.Apis.Upload;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
 
@@ -7,21 +9,30 @@ namespace LiveStreamAssistance;
 
 public class YouTubeBroadcast
 {
+    public YouTubeService Service { get; set; }
+
     public GoogleCredential Credential { get; set; }
 
-    public void print_categories()
+    public YouTubeBroadcast(GoogleCredential credentaial)
     {
-    }
+        this.Credential = credentaial;
 
-    public async Task<List<string>> print_playlists()
-    {
-        // GoogleCredential cred = await auth.GetCredentialAsync();
-
-        var service = new YouTubeService(new BaseClientService.Initializer
+        this.Service = new YouTubeService(new BaseClientService.Initializer
         {
             HttpClientInitializer = this.Credential,
         });
-        var listRequest = service.Playlists.List(part: "id,snippet,status");
+    }
+
+    public async Task<bool> EchoCategories()
+    {
+        return true;
+    }
+
+    public async Task<bool> EchoPlaylists()
+    {
+        // GoogleCredential cred = await auth.GetCredentialAsync();
+
+        var listRequest = this.Service.Playlists.List(part: "id,snippet,status");
 
         // 引数で指定できないオプションをプロパティで設定する。
         // こういうことはよくあるみたい
@@ -29,23 +40,53 @@ public class YouTubeBroadcast
         listRequest.MaxResults = 50;
 
         var playlists = await listRequest.ExecuteAsync();
-        var fileNames = playlists.Items.Select(p => p.Snippet.Title).ToList();
+        foreach (var line in playlists.Items.Select(p => $"{p.Snippet.Title} : {p.Id}").ToList())
+        {
+            Console.WriteLine(line);
+        }
 
-        return fileNames;
+        return true;
     }
 
-    private async Task<LiveBroadcast> InsertBroadcast(
-        string broadcastTitle, string description,
-        DateTime? startTime,
+    public async Task<bool> AddToPlaylist(string playlistId, LiveBroadcast liveBroadcast)
+    {
+        var listRequest = this.Service.Playlists.List(part: "id,snippet,status");
+        listRequest.Mine = true;
+        listRequest.MaxResults = 50;
+
+        var playlists = await listRequest.ExecuteAsync();
+        var title = playlists.Items.FirstOrDefault(x => x.Id == playlistId)?.Snippet.Title;
+        Console.WriteLine($"プレイリスト'{title}'に追加します");
+
+        /*
+        var playlistItemsRequest = this.Service.PlaylistItems.List(part: "id,snippet,status");
+        playlistItemsRequest.PlaylistId = playlistId;
+        var playlistItems = await playlistItemsRequest.ExecuteAsync();
+        Console.WriteLine(playlistItems);
+         */
+
+        var newPlaylistItem = new PlaylistItem()
+        {
+            Snippet = new PlaylistItemSnippet()
+            {
+                PlaylistId = playlistId,
+                ResourceId = new ResourceId()
+                {
+                    Kind = "youtube#video",
+                    VideoId = liveBroadcast.Id,
+                },
+            },
+        };
+        var insertPlaylistItemsRequest = this.Service.PlaylistItems.Insert(newPlaylistItem, part: "id,snippet,status");
+        var result = await insertPlaylistItemsRequest.ExecuteAsync();
+
+        return true;
+    }
+
+    private async Task<LiveBroadcast> InsertBroadcast(string broadcastTitle, string description, DateTime startTime,
         string privacyStatus)
     {
-        var service = new YouTubeService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = this.Credential,
-            ApplicationName = "Live Streaming Assistance",
-        });
-
-        var liveBroadcast = await service.LiveBroadcasts.Insert(
+        var liveBroadcast = await this.Service.LiveBroadcasts.Insert(
             part: "snippet,status,contentDetails",
             body: new LiveBroadcast()
             {
@@ -65,21 +106,15 @@ public class YouTubeBroadcast
                     EnableAutoStart = true,
                     EnableAutoStop = true,
                 },
-            }
-        ).ExecuteAsync();
+            }).ExecuteAsync();
 
+        Console.WriteLine($"'{liveBroadcast.Snippet.Title}'を作成しました");
         return liveBroadcast;
     }
 
     private async Task<LiveBroadcast> BindBroadcast(LiveBroadcast broadcast, LiveStream stream)
     {
-        var service = new YouTubeService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = this.Credential,
-            ApplicationName = "Live Streaming Assistance",
-        });
-
-        var bindRequest = service.LiveBroadcasts.Bind(part: "id,contentDetails", id: broadcast.Id);
+        var bindRequest = this.Service.LiveBroadcasts.Bind(part: "id,contentDetails", id: broadcast.Id);
         bindRequest.StreamId = stream.Id;
 
         var response = await bindRequest.ExecuteAsync();
@@ -89,13 +124,7 @@ public class YouTubeBroadcast
 
     private async Task<LiveStream> InsertStream(string streamTitle, LiveBroadcast broadcast)
     {
-        var service = new YouTubeService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = this.Credential,
-            ApplicationName = "Live Streaming Assistance",
-        });
-
-        var response = await service.LiveStreams.Insert(
+        var response = await this.Service.LiveStreams.Insert(
             part: "snippet,cdn",
             body: new LiveStream()
             {
@@ -111,54 +140,52 @@ public class YouTubeBroadcast
                 },
             }).ExecuteAsync();
 
+        Console.WriteLine($"'{response.Snippet.Title}'を作成しました");
+
         return response;
     }
 
-    private ThumbnailsResource.SetMediaUpload UploadThumbnail(LiveBroadcast broadcast,
-        string thumbnail)
+    private async Task<bool> UploadThumbnail(LiveBroadcast broadcast, string thumbnailFilename)
     {
-        var service = new YouTubeService(new BaseClientService.Initializer()
+        using (var stream = new FileStream(thumbnailFilename, FileMode.Open, FileAccess.Read))
         {
-            HttpClientInitializer = this.Credential,
-            ApplicationName = "Live Streaming Assistance",
-        });
-
-        using (var stream = new FileStream(thumbnail, FileMode.Open, FileAccess.Read))
-        {
-            var response = service.Thumbnails.Set(
+            var request = this.Service.Thumbnails.Set(
                 videoId: broadcast.Id,
                 stream: stream,
                 contentType: "application/octet-stream");
-            return response;
+
+            var result = await request.UploadAsync();
+            if (result.Status == UploadStatus.Failed)
+            {
+                Console.WriteLine($"サムネイル画像のアップロードに失敗しました。\n{result.Exception.Message}");
+                return false;
+            }
+
+            Console.WriteLine($"サムネイル画像 '{thumbnailFilename}' をアップロードしました");
+            return true;
         }
     }
 
-    public async Task<LiveStream> Create(
-        string broadcastTitle, string description, DateTime startTime, string privacyStatus,
-        string streamTitle,
-        string thumbnail,
-        string playlistId, string category
-    )
+    public async Task<LiveStream> Create(string broadcastTitle, string description, DateTime startTime,
+        string privacyStatus, string streamTitle, string thumbnailFilename, string playlistId, string category)
     {
-        // var credential = await this.Auth();
-
         if (this.Credential is null)
         {
             return null;
         }
 
-        //print_categories(credential);
-        var playlists = await this.print_playlists();
-        foreach (var playlist in playlists)
-        {
-            Console.WriteLine(playlist);
-        }
-
+        // ブロードキャスト作成
         var liveBroadcast = await this.InsertBroadcast(broadcastTitle, description, startTime, privacyStatus);
+
+        // サムネイルアップロード
+        await this.UploadThumbnail(liveBroadcast, thumbnailFilename);
+
+        // プレイリストへの追加
+        await this.AddToPlaylist(playlistId, liveBroadcast);
+
+        // ストリーム作成とブロードキャストへのバインド
         var liveStream = await this.InsertStream(streamTitle, liveBroadcast);
         var _ = await this.BindBroadcast(liveBroadcast, liveStream);
-
-        // this.UploadThumbnail(liveBroadcast, thumbnail);
 
         return liveStream;
     }
