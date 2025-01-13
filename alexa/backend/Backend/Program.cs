@@ -102,7 +102,7 @@ namespace LiveStreamAssistance
                         }
 
                         Console.WriteLine("Live Broadcastとストリーム作成に成功しました");
-                        Console.WriteLine(liveStream.Id);
+                        Console.WriteLine(liveStream.Cdn.IngestionInfo.StreamName);
                     }).GetAwaiter().GetResult();
                 })
                 .WithParsed<WriteAtemMiniSubCommand>(opt2 =>
