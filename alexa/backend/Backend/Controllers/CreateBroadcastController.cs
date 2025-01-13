@@ -10,10 +10,9 @@ public class CreateBroadcastController : ControllerBase
     [HttpPost]
     public IActionResult Post([FromBody] RequestBody request)
     {
-        string template = "piano";
-        if (!string.IsNullOrEmpty(request.Template))
+        if (string.IsNullOrEmpty(request.Template))
         {
-            template = request.Template;
+            return this.BadRequest("Template is required.");
         }
 
         try
@@ -27,7 +26,7 @@ public class CreateBroadcastController : ControllerBase
                 StartInfo = new ProcessStartInfo()
                 {
                     FileName = executeFilePath,
-                    Arguments = $"createBroadcast --template {template}",
+                    Arguments = $"createBroadcast --template {request.Template}",
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
