@@ -1,5 +1,6 @@
 using Alexa.NET;
 using Alexa.NET.Request;
+using Alexa.NET.Request.Type;
 using Alexa.NET.Response;
 using Amazon.Lambda.Core;
 using System;
@@ -50,8 +51,21 @@ public class Function
     {
         string baseUrl = "https://takahashi-tribe.ngrok.dev";
         var progressiveResponse = new ProgressiveResponse(input);
+        var template = "piano";
+
+        var intentRequest = input.Request as IntentRequest;
+        if (intentRequest?.Intent.Name == "PrepareLiveStreamingIntent")
+        {
+            // スロット値を取得
+            var musicalInstrumentSlot = intentRequest.Intent.Slots["musicalInstrument"]?.Value;
+            if (musicalInstrumentSlot == "ギター")
+            {
+                template = "guitar";
+            }
+        }
 
         await progressiveResponse.SendSpeech("ライブ配信準備を開始します");
+        await progressiveResponse.SendSpeech($"テンプレートは{template}です");
 
         try
         {
@@ -61,7 +75,7 @@ public class Function
             // 家庭内サーバーに送るデータのシリアライズ
             var createBroadcastRequest = new CreateBroadcastRequest()
             {
-                Template = "piano",
+                Template = template,
             };
             string jsonPayload = JsonSerializer.Serialize(createBroadcastRequest);
 
