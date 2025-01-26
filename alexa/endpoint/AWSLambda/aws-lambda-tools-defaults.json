@@ -21,7 +21,7 @@
     "function-subnets"      : "",
     "function-security-groups" : "",
     "tracing-mode"             : "PassThrough",
-    "environment-variables"    : "",
+    "environment-variables"    : "\"INTERNAL_SERVER_URL\"=\"https://sample\"",
     "image-tag"                : "",
     "function-description"     : ""
 }

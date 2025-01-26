@@ -49,7 +49,8 @@ public class Function
     /// <returns>SkillResponse</returns>
     public async Task<SkillResponse> FunctionHandler(SkillRequest input, ILambdaContext context)
     {
-        string baseUrl = "https://takahashi-tribe.ngrok.dev";
+        var baseUrl = Environment.GetEnvironmentVariable("INTERNAL_SERVER_URL");
+
         var progressiveResponse = new ProgressiveResponse(input);
         var template = "piano";
 
