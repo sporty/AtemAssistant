@@ -7,7 +7,7 @@ namespace LiveStreamAssistance;
 
 public class AtemMini
 {
-    public string IpAddress = "10.0.0.9";
+    public string IpAddress = "10.0.0.6";
     public TimeSpan timeOut = TimeSpan.FromSeconds(5);
 
     public async Task<string> WriteStreamId(string streamId)
@@ -83,11 +83,13 @@ public class AtemMini
             if (!result)
             {
                 Console.WriteLine("タイムアウトしました。");
+                throw new Exception("Timeout!");
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to connect to ATEM Mini: {ex.Message}");
+            throw;
         }
         finally
         {
